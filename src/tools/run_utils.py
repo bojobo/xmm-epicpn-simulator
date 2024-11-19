@@ -36,6 +36,7 @@ def configure_logger(
         rotation=rotation,
         retention=retention,
         opener=_opener,
+        format="{time} | {level: <8} | {name} | {function} | {line: >3} | {message}",
     )
 
 

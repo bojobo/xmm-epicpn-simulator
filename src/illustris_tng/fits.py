@@ -36,11 +36,12 @@ def cutout_to_xray_fits(
         f"widths={widths}; resolution={resolutions}; redshift={redshift}; overwrite={overwrite}; "
         f"output_dir={output_dir}; cutout_datafolder={cutout.parent}"
     )
-    start = datetime.now()
 
+    logger.info(f"START\tGenerating X-ray FITS for {cutout}")
+    start = datetime.now()
     # Force turn off all logging from yt via redirecting stdout and stderr into /dev/null
     with open(os.devnull, "w") as f, redirect_stdout(f), redirect_stderr(f):
-        ds = load(f"{cutout.resolve()}", default_species_fields="ionized")
+        ds = load(cutout.resolve(), default_species_fields="ionized")
 
         add_xray_emissivity_field(ds, emin, emax, redshift, data_dir=cloudy_emissivity_root)
 
@@ -60,7 +61,7 @@ def cutout_to_xray_fits(
                         fits_path = fits_path.resolve()
 
                         if fits_path.exists() and not overwrite:
-                            raise FileExistsError(f"{fits_path} already exists and `overwrite` is False")
+                            logger.info(f"{fits_path} already exists and `overwrite` is False")
                         try:
                             if mode == "proj":
                                 yt_fits = FITSOffAxisProjection(
@@ -102,4 +103,4 @@ def cutout_to_xray_fits(
     if consume_data:
         cutout.unlink()
     end = datetime.now()
-    logger.info(f"Processing of {cutout} took {end - start}.")
+    logger.success(f"DONE\tGenerated X-ray FITS for {cutout}. Duration: {end - start}")

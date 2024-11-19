@@ -28,7 +28,7 @@ def get_available_simulations(api_key: str) -> Iterator[tuple[str, str]]:
     return ((simulation.pop("name"), simulation.pop("url")) for simulation in simulations)
 
 
-def get_subhalos(api_key: str, simulation_url: str, snapshot_num: int, params: dict) -> Iterator[str]:
+def get_subhalos(api_key: str, simulation_url: str, snapshot_num: int, params: dict) -> list[str]:
     content = get(
         f"{simulation_url}/snapshots/{snapshot_num}/subhalos/",
         params=params,
@@ -36,7 +36,7 @@ def get_subhalos(api_key: str, simulation_url: str, snapshot_num: int, params: d
     )
     subhalos = content["results"]
 
-    return (subhalo.pop("url") for subhalo in subhalos)
+    return [subhalo.pop("url") for subhalo in subhalos]
 
 
 def get(path: str, headers, params=None) -> dict | Response:
