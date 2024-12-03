@@ -1,5 +1,4 @@
 import re
-from collections.abc import Iterator
 from pathlib import Path
 
 import requests
@@ -21,11 +20,11 @@ def _handle_cutout_name(cutout_url: str) -> tuple[str, str, str]:
         raise ValueError
 
 
-def get_available_simulations(api_key: str) -> Iterator[tuple[str, str]]:
+def get_available_simulations(api_key: str) -> list[tuple[str, str]]:
     content = get("https://www.tng-project.org/api/", headers={"api-key": api_key})
     simulations = content["simulations"]
 
-    return ((simulation.pop("name"), simulation.pop("url")) for simulation in simulations)
+    return [(simulation.pop("name"), simulation.pop("url")) for simulation in simulations]
 
 
 def get_subhalos(api_key: str, simulation_url: str, snapshot_num: int, params: dict) -> list[str]:

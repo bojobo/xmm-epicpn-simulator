@@ -1,3 +1,4 @@
+from enum import StrEnum
 from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Annotated
@@ -14,6 +15,12 @@ from pydantic import (
 from pydantic.functional_validators import AfterValidator
 
 
+class XMM_FILTER(StrEnum):
+    THIN = "thin"
+    MED = "med"
+    THICK = "thick"
+
+
 def _expanduser(v: Path) -> Path:
     return v.expanduser()
 
@@ -26,13 +33,6 @@ def _mkdir(v: Path) -> Path:
 def _get_num_processes(v: int) -> int:
     if v == 0:
         return cpu_count()
-    return v
-
-
-def _check_xmm_filter(v: str) -> str:
-    filters = ["thin", "med", "thick"]
-    if v not in filters:
-        raise ValueError(f"Unknown filter [{v}] for XMM-Newton! Available filters: {list(filters.keys())}")
     return v
 
 
@@ -128,9 +128,38 @@ class SimputCfg(BaseModel):
     # bkg: dict[str, int]
     offset_std: PositiveFloat
     num_img_sample: PositiveInt
-    simput_dir: CfgPath
-    fits_dir: CfgPath
-    fits_compressed: Path
+    working_dir: CfgPath
+    output_dir: CfgPath
+
+    @computed_field
+    @property
+    def simput_dir(self) -> Path:
+        return self.working_dir / "simput"
+
+    @computed_field
+    @property
+    def fits_dir(self) -> Path:
+        return self.working_dir / "fits"
+
+    @computed_field
+    @property
+    def fits_compressed(self) -> Path:
+        return self.output_dir / "fits.tar.gz"
+
+    @computed_field
+    @property
+    def img_compressed(self) -> Path:
+        return self.output_dir / "simput" / "img.tar.gz"
+
+    @computed_field
+    @property
+    def bkg_compressed(self) -> Path:
+        return self.output_dir / "simput" / "bkg.tar.gz"
+
+    @computed_field
+    @property
+    def agn_compressed(self) -> Path:
+        return self.output_dir / "simput" / "agn.tar.gz"
 
 
 class EnergySettings(BaseModel):
@@ -149,6 +178,11 @@ class EnvironmentCfg(BaseModel):
     consume_data: bool = False
 
 
+class MultiprocessingCfg(BaseModel):
+    num_cores: NonNegativeInt
+    ram_gb: PositiveInt
+
+
 class SimulationCfg(BaseModel):
     num_processes: NonNegativeInt
     res_mults: list[PositiveInt]
@@ -161,7 +195,7 @@ class SimulationCfg(BaseModel):
 
 class _EMOS(BaseModel):
     use: bool
-    filter: Annotated[str, AfterValidator(_check_xmm_filter)]
+    filter: XMM_FILTER
     sim_separate_ccds: bool
     max_event_pattern: Annotated[int, Field(ge=-1, le=12)]
     mask_level: Annotated[str, AfterValidator(_check_mask)]
@@ -175,7 +209,7 @@ class _EMOS(BaseModel):
 
 class _EPN(BaseModel):
     use: bool
-    filter: Annotated[str, AfterValidator(_check_xmm_filter)]
+    filter: XMM_FILTER
     sim_separate_ccds: bool
     max_event_pattern: Annotated[int, Field(ge=-1, le=4)]
     mask_level: Annotated[str, AfterValidator(_check_mask)]

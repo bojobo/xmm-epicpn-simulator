@@ -5,6 +5,7 @@ from typing import Literal
 
 import numpy as np
 from astropy.io import fits
+from pysas.wrapper import Wrapper as sas
 
 from src.config import EnergySettings
 from src.xmm.ccf import get_xrt_xareaef
@@ -343,6 +344,46 @@ def create_xml_files(
         )
 
     raise ValueError(f"Unknown instrument '{instrument_name}'! Available instruments: {available_instruments}.")
+
+
+def get_background_spectrum(instrument_name: str, spectrum_dir: Path, filter_abbr: str) -> Path:
+    from src.tools.tools import download_file
+
+    if instrument_name not in available_instruments:
+        raise ValueError(f"Unknown instrument '{instrument_name}'! Available instruments: {available_instruments}.")
+
+    base_url = (
+        "https://xmm-tools.cosmos.esa.int/external/xmm_calibration/background/bs_repository/{0}{1}ffg_events.fits"
+    )
+    url = base_url.format(f"{instrument_name[1]}{instrument_name[-1]}", filter_abbr)
+    blank_sky_events = spectrum_dir / url.split("/")[-1]
+    out_file = spectrum_dir / f"{url.split('/')[-1].split('_')[0]}_spectrum.fits"
+
+    if out_file.exists():
+        return out_file
+
+    spectrum_dir.mkdir(exist_ok=True, parents=True)
+
+    if not blank_sky_events.exists():
+        download_file(url, blank_sky_events)
+
+    assert blank_sky_events.exists()
+
+    sas(
+        taskname="evselect",
+        inargs=[
+            f"table={blank_sky_events}",
+            "energycolumn=PI",
+            f"spectrumset={out_file}",
+            "specchannelmin=0",
+            "specchannelmax=20479",
+            "withspectrumset=yes",
+        ],
+    ).run()
+
+    blank_sky_events.unlink()
+
+    return out_file
 
 
 def get_xml_file(

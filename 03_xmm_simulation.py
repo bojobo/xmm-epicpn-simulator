@@ -10,13 +10,13 @@ from tempfile import TemporaryDirectory
 from typing import Literal
 
 from loguru import logger
+from tools.files import compress_targz, decompress_targz
+from xmm.tools import create_mask, create_psf_file, create_vinget_file, create_xml_files
 
 from src.config import EnergySettings, EnvironmentCfg, SimulationCfg
 from src.sixte.simulator import run_xmm_simulation
-from src.xmm.utils import create_mask, create_psf_file, create_vinget_file, create_xml_files
-from src.xmm_utils.file_utils import compress_targz, decompress_targz
-from src.xmm_utils.multiprocessing import mp_run
-from src.xmm_utils.run_utils import configure_logger, load_satellites
+from src.tools.multiprocessing import mp_run
+from src.tools.run_utils import configure_logger, load_satellites
 
 logger.remove()
 

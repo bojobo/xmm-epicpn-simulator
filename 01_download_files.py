@@ -4,32 +4,38 @@ import shutil
 import tomllib
 from argparse import ArgumentParser
 from concurrent.futures import Future, ProcessPoolExecutor, as_completed
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
 from loguru import logger
+from tools.files import compress_targz, decompress_targz
 from tqdm import tqdm
 
-from src.config import DownloadCfg, EnergySettings, EnvironmentCfg
+from src.config import DownloadCfg, EnergySettings, EnvironmentCfg, MultiprocessingCfg
 from src.illustris_tng.download_data import (
     get_available_simulations,
     get_cutouts,
     get_subhalos,
 )
 from src.illustris_tng.fits import cutout_to_xray_fits
-from src.tools.file_utils import compress_targz, decompress_targz
 from src.tools.run_utils import configure_logger
 from src.tools.tools import download_file
 
 logger.remove()
 
 
-def download_data(download_cfg: DownloadCfg, env_cfg: EnvironmentCfg, energies: EnergySettings, api_key: str) -> None:
+def download_data(
+    download_cfg: DownloadCfg,
+    env_cfg: EnvironmentCfg,
+    energies: EnergySettings,
+    mp_cfg: MultiprocessingCfg,
+    api_key: str,
+) -> None:
     decompress_fs: dict[str, Future] = {}
     compress_fs: dict[Future, str] = {}
 
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=mp_cfg.num_cores) as executor:
         if download_cfg.cutouts_compressed.exists():
             logger.info(f"Found compressed cutouts in {download_cfg.cutouts_compressed}")
             decompress_fs["cutouts"] = executor.submit(
@@ -235,6 +241,7 @@ if __name__ == "__main__":
         fits_compressed=env_cfg.output_dir / "fits.tar.gz",
     )
     energies = EnergySettings(**cfg.pop("energy"))
+    mp_cfg = MultiprocessingCfg(**cfg.pop("multiprocessing"))
 
     del cfg
 
@@ -244,8 +251,6 @@ if __name__ == "__main__":
         enqueue=True,
         debug=env_cfg.debug,
         verbose=env_cfg.verbose,
-        rotation=timedelta(hours=1),
-        retention=2,
     )
 
     starttime = datetime.now()
@@ -253,6 +258,7 @@ if __name__ == "__main__":
         download_cfg=download_cfg,
         env_cfg=env_cfg,
         energies=energies,
+        mp_cfg=mp_cfg,
         api_key=args.api_key,
     )
     endtime = datetime.now()

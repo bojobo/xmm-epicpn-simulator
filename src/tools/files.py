@@ -19,10 +19,7 @@ def compress_targz(in_path: Path, out_file_path: Path, remove_files: bool = Fals
         raise ValueError(f"Output file path {out_file_path.resolve()} does not end with '.tar.gz'")
     out_file_path.parent.mkdir(parents=True, exist_ok=True)
     suffix = " --remove-files" if remove_files else ""
-    run_command(
-        f"cd {in_path.parent.resolve()} && "
-        + f"tar -czf {out_file_path.resolve()} {in_path.name}{os.sep} --overwrite{suffix}"
-    )
+    run_command(f"cd {in_path.parent} && " + f"tar -czf {out_file_path} {in_path.name}{os.sep} --overwrite{suffix}")
 
 
 def decompress_targz(in_file_path: Path, out_file_dir: Path, tar_options: str = ""):

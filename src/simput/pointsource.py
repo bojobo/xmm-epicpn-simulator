@@ -3,10 +3,10 @@ from pathlib import Path
 import numpy as np
 
 from src.sixte import commands
-from src.xmm.utils import get_fov
+from src.xmm.tools import get_fov
 
 
-def simput_ps(
+def create_pointsource(
     emin: float,
     emax: float,
     output_file: Path,
@@ -14,7 +14,6 @@ def simput_ps(
     center_point: tuple[float, float] = (0.0, 0.0),
     src_flux: float | str = 1.0e-12,
     offset: tuple[float, float] | str = (0.0, 0.0),
-    verbose: bool = True,
 ) -> Path:
     """
     Generates a single point-source
@@ -30,7 +29,7 @@ def simput_ps(
 
     rng = np.random.default_rng()
     # TODO these values are only based on the tutorial values, no thought if they are realistic
-    if src_flux == "random":
+    if isinstance(src_flux, str) and src_flux == "random":
         src_flux = rng.uniform(low=1.0e-13, high=1.0e-10)
 
     # Randomly position the point source within the fov
